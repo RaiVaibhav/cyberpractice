@@ -1,0 +1,1 @@
+Indirectly, where an attacker delivers the prompt via an external source. For example, the prompt could be included in training data or output from an API call.
