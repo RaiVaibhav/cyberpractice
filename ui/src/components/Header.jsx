@@ -1,69 +1,71 @@
-import React from 'react';
+import React from "react";
+import { Dices, RotateCcw, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const Chip = ({ children, kind }) => <span className={'chip' + (kind ? ' ' + kind : '')}>{children}</span>;
-
-// Difficulty → a colour class, easy → hard.
 const DIFF_CLASS = {
-  Starter: 'd-starter',
-  Core: 'd-core',
-  Advanced: 'd-advanced',
-  Expert: 'd-expert',
+  Starter: "border-emerald-500/40 text-emerald-400",
+  Core: "border-sky-500/40 text-sky-400",
+  Advanced: "border-amber-500/40 text-amber-400",
+  Expert: "border-rose-500/40 text-rose-400",
 };
 
 export default function Header({ data, scenarios, currentId, onSelect, onReset }) {
-  const diffClass = DIFF_CLASS[data.difficulty] || 'd-core';
+  const diffClass = DIFF_CLASS[data.difficulty] || "border-sky-500/40 text-sky-400";
 
   function random() {
     const others = scenarios.filter((s) => s.id !== currentId);
     const pool = others.length ? others : scenarios;
-    if (!pool.length) return;
-    onSelect(pool[Math.floor(Math.random() * pool.length)].id);
+    if (pool.length) onSelect(pool[Math.floor(Math.random() * pool.length)].id);
   }
 
-  // Group scenarios by category for the dropdown.
   const groups = {};
   for (const s of scenarios) (groups[s.category] ||= []).push(s);
 
   return (
-    <header className="top">
-      <div className="brand">
-        <span className="logo">🛡️</span>
+    <header className="flex flex-wrap items-center gap-3 border-b bg-card/40 px-4 py-2.5">
+      <div className="flex items-center gap-2 font-semibold">
+        <ShieldCheck className="h-5 w-5 text-primary" />
         <span>cyberpractice</span>
-        <span className="sub">· attack lab</span>
+        <span className="text-xs font-normal text-muted-foreground">· attack lab</span>
       </div>
 
-      <div className="switcher">
-        <select
-          className="scenario-select"
-          value={currentId || ''}
-          onChange={(e) => onSelect(e.target.value)}
-          title="Switch scenario"
-        >
-          {Object.entries(groups).map(([category, items]) => (
-            <optgroup key={category} label={category}>
-              {items.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.subtype} — {s.title} · {s.difficulty}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-        <button className="ghost dice" onClick={random} title="Random scenario">
-          🎲 Random
-        </button>
+      <div className="flex items-center gap-2">
+        <Select value={currentId || ""} onValueChange={onSelect}>
+          <SelectTrigger className="w-[300px]">
+            <SelectValue placeholder="Choose a scenario" />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(groups).map(([category, items]) => (
+              <SelectGroup key={category}>
+                <SelectLabel>{category}</SelectLabel>
+                {items.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.subtype} — {s.difficulty}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button variant="outline" size="sm" onClick={random} title="Random scenario">
+          <Dices className="h-4 w-4" />
+          Random
+        </Button>
       </div>
 
-      <div className="crumbs">
-        <Chip>{data.subtype}</Chip>
-        <Chip kind={diffClass}>{data.difficulty}</Chip>
-        <Chip kind="model">{data.provider.label}</Chip>
+      <div className="hidden items-center gap-2 lg:flex">
+        <Badge variant="outline" className="text-muted-foreground">{data.subtype}</Badge>
+        <Badge variant="outline" className={diffClass}>{data.difficulty}</Badge>
+        <Badge variant="outline" className="border-primary/40 text-primary">{data.provider.label}</Badge>
       </div>
 
-      <div className="spacer" />
-      <button className="ghost" onClick={onReset}>
-        ↻ Reset
-      </button>
+      <div className="flex-1" />
+      <Button variant="ghost" size="sm" onClick={onReset}>
+        <RotateCcw className="h-4 w-4" />
+        Reset
+      </Button>
     </header>
   );
 }

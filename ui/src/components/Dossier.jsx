@@ -1,138 +1,146 @@
-import React, { useState } from 'react';
-import { api } from '../api.js';
+import React, { useState } from "react";
+import { Lightbulb, Play, Lock, AlertTriangle } from "lucide-react";
+import { api } from "../api.js";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+
+const SectionTitle = ({ children }) => (
+  <div className="mb-2 mt-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{children}</div>
+);
 
 export default function Dossier({ data, activeTab, setActiveTab, pushMessage, mergeState }) {
-  const tabs = [
-    ['brief', 'Brief'],
-    ['state', 'State'],
-    data.actions.length ? ['attack', 'Attack'] : null,
-    ['trace', 'Trace'],
-    ['help', 'Hints'],
-  ].filter(Boolean);
+  const hasActions = data.actions.length > 0;
 
   return (
-    <div className="side">
-      <div className="tabs">
-        {tabs.map(([id, label]) => (
-          <div
-            key={id}
-            className={'tab' + (id === activeTab ? ' active' : '')}
-            onClick={() => setActiveTab(id)}
-          >
-            {label}
-          </div>
-        ))}
-      </div>
+    <div className="min-h-0 overflow-y-auto bg-card/20">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="p-3">
+        <TabsList className="sticky top-0 z-10">
+          <TabsTrigger value="brief">Brief</TabsTrigger>
+          <TabsTrigger value="state">State</TabsTrigger>
+          {hasActions && <TabsTrigger value="attack">Attack</TabsTrigger>}
+          <TabsTrigger value="trace">Trace</TabsTrigger>
+          <TabsTrigger value="help">Hints</TabsTrigger>
+        </TabsList>
 
-      {activeTab === 'brief' && <BriefPane data={data} />}
-      {activeTab === 'state' && <StatePane data={data} />}
-      {activeTab === 'attack' && data.actions.length > 0 && (
-        <AttackPane
-          data={data}
-          pushMessage={pushMessage}
-          mergeState={mergeState}
-          onDone={() => setActiveTab('trace')}
-        />
-      )}
-      {activeTab === 'trace' && <TracePane trace={data.trace} />}
-      {activeTab === 'help' && <HelpPane data={data} />}
+        <TabsContent value="brief">
+          <BriefPane data={data} />
+        </TabsContent>
+        <TabsContent value="state">
+          <StatePane data={data} />
+        </TabsContent>
+        {hasActions && (
+          <TabsContent value="attack">
+            <AttackPane data={data} pushMessage={pushMessage} mergeState={mergeState} onDone={() => setActiveTab("trace")} />
+          </TabsContent>
+        )}
+        <TabsContent value="trace">
+          <TracePane trace={data.trace} />
+        </TabsContent>
+        <TabsContent value="help">
+          <HelpPane data={data} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
 
-/* ---------------- Brief ---------------- */
 function BriefPane({ data }) {
   return (
-    <div className="pane">
-      <div className="section-title">Your mission</div>
-      <div className="card">
-        <p className="obj">
-          <b>Objective:</b> {data.objective}
-        </p>
-      </div>
+    <div className="space-y-3 pt-1">
+      <SectionTitle>Your mission</SectionTitle>
+      <Card>
+        <CardContent className="p-4 text-sm">
+          <span className="font-semibold text-primary">Objective:</span> {data.objective}
+        </CardContent>
+      </Card>
 
       {data.background && (
-        <div className="card">
-          <p>{data.background}</p>
-        </div>
+        <Card>
+          <CardContent className="p-4 text-sm text-muted-foreground">{data.background}</CardContent>
+        </Card>
       )}
 
       {data.brief && (
         <>
-          <div className="section-title">Scenario brief</div>
-          <div className="card">
-            <pre className="sys">{data.brief.trim()}</pre>
-          </div>
+          <SectionTitle>Scenario brief</SectionTitle>
+          <Card>
+            <CardContent className="p-3">
+              <pre className="whitespace-pre-wrap font-mono text-xs text-muted-foreground">{data.brief.trim()}</pre>
+            </CardContent>
+          </Card>
         </>
       )}
 
-      <div className="section-title">Target's system prompt</div>
-      <div className="card">
-        <pre className="sys">{data.systemPrompt}</pre>
-      </div>
+      <SectionTitle>Target's system prompt</SectionTitle>
+      <Card>
+        <CardContent className="p-3">
+          <pre className="whitespace-pre-wrap font-mono text-xs text-muted-foreground">{data.systemPrompt}</pre>
+        </CardContent>
+      </Card>
 
-      <div className="section-title">Tools the model can call</div>
-      <div className="tools">
+      <SectionTitle>Tools the model can call</SectionTitle>
+      <div className="space-y-2">
         {data.tools.map((t) => (
-          <div className="tool" key={t.name}>
-            <div className="n">
-              {t.name}
-              {t.privileged && <span className="lock">🔒 privileged</span>}
-            </div>
-            <div className="d">{t.description}</div>
-          </div>
+          <Card key={t.name}>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2 font-mono text-sm text-primary">
+                {t.name}
+                {t.privileged && (
+                  <span className="inline-flex items-center gap-1 text-xs text-amber-400">
+                    <Lock className="h-3 w-3" /> privileged
+                  </span>
+                )}
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">{t.description}</div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>
   );
 }
 
-/* ---------------- State ---------------- */
 function StatePane({ data }) {
   const panels = data.panels || [];
   return (
-    <div className="pane">
-      {panels.length === 0 && <p className="trace-empty">This scenario exposes no live state.</p>}
+    <div className="space-y-3 pt-1">
+      {panels.length === 0 && <p className="text-sm italic text-muted-foreground">This scenario exposes no live state.</p>}
       {panels.map((panel) => (
-        <React.Fragment key={panel.id}>
-          <div className="section-title">{panel.title}</div>
-          {panel.hint && <div className="panel-hint">{panel.hint}</div>}
-          <div className="card">
-            <div className="kv">
+        <div key={panel.id}>
+          <SectionTitle>{panel.title}</SectionTitle>
+          {panel.hint && <div className="mb-2 text-xs text-muted-foreground">{panel.hint}</div>}
+          <Card>
+            <CardContent className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1.5 p-3 text-sm">
               {panel.rows.map((row, i) => (
                 <React.Fragment key={i}>
-                  <div className="k">{row.label}</div>
-                  <div className={'v' + (row.flag ? ' flag' : '')}>{row.value}</div>
+                  <div className="text-muted-foreground">{row.label}</div>
+                  <div className={cn("text-right font-mono text-xs", row.flag && "font-semibold text-rose-400")}>{row.value}</div>
                 </React.Fragment>
               ))}
-            </div>
-          </div>
-        </React.Fragment>
+            </CardContent>
+          </Card>
+        </div>
       ))}
     </div>
   );
 }
 
-/* ---------------- Attack (out-of-band actions) ---------------- */
 function AttackPane({ data, pushMessage, mergeState, onDone }) {
   return (
-    <div className="pane">
-      <div className="section-title">Out-of-band actions</div>
-      <div className="card">
-        <p>
-          These happen outside your chat — planting data or simulating another user. This is how you
-          stage an indirect attack.
-        </p>
-      </div>
+    <div className="space-y-3 pt-1">
+      <SectionTitle>Out-of-band actions</SectionTitle>
+      <Card>
+        <CardContent className="p-4 text-sm text-muted-foreground">
+          These happen outside your chat — planting data or simulating another user. This is how you stage an indirect attack.
+        </CardContent>
+      </Card>
       {data.actions.map((action) => (
-        <ActionForm
-          key={action.id}
-          action={action}
-          appName={data.app.name}
-          pushMessage={pushMessage}
-          mergeState={mergeState}
-          onDone={onDone}
-        />
+        <ActionForm key={action.id} action={action} appName={data.app.name} pushMessage={pushMessage} mergeState={mergeState} onDone={onDone} />
       ))}
     </div>
   );
@@ -141,7 +149,7 @@ function AttackPane({ data, pushMessage, mergeState, onDone }) {
 function ActionForm({ action, appName, pushMessage, mergeState, onDone }) {
   const [values, setValues] = useState(() => {
     const init = {};
-    for (const f of action.fields || []) init[f.name] = f.default || '';
+    for (const f of action.fields || []) init[f.name] = f.default || "";
     return init;
   });
   const [busy, setBusy] = useState(false);
@@ -149,13 +157,13 @@ function ActionForm({ action, appName, pushMessage, mergeState, onDone }) {
   async function run() {
     setBusy(true);
     try {
-      const res = await api.post('/api/action', { action: action.id, fields: values });
+      const res = await api.post("/api/action", { action: action.id, fields: values });
       mergeState(res);
       if (res.transcript) {
-        pushMessage({ role: 'victim', who: values.username || 'victim', text: res.transcript.user });
-        pushMessage({ role: 'assistant', who: appName, text: res.transcript.reply });
+        pushMessage({ role: "victim", who: values.username || "victim", text: res.transcript.user });
+        pushMessage({ role: "assistant", who: appName, text: res.transcript.reply });
       }
-      pushMessage({ role: 'sys', text: '· ' + res.note + ' ·' });
+      pushMessage({ role: "sys", text: "· " + res.note + " ·" });
       onDone();
     } catch (err) {
       alert(err.message);
@@ -165,65 +173,83 @@ function ActionForm({ action, appName, pushMessage, mergeState, onDone }) {
   }
 
   return (
-    <div className="action-form">
-      <h4>{action.label}</h4>
-      <div className="d">{action.description}</div>
-      {(action.fields || []).map((f) => (
-        <React.Fragment key={f.name}>
-          <label>{f.label || f.name}</label>
-          {f.type === 'textarea' ? (
-            <textarea
-              rows={f.rows || 3}
-              placeholder={f.placeholder || ''}
-              value={values[f.name]}
-              onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
-            />
-          ) : (
-            <input
-              placeholder={f.placeholder || ''}
-              value={values[f.name]}
-              onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
-            />
-          )}
-        </React.Fragment>
-      ))}
-      <button className="attack" style={{ marginTop: 10 }} onClick={run} disabled={busy}>
-        ▶ {action.label}
-      </button>
-    </div>
+    <Card className="border-pink-900/40">
+      <CardContent className="space-y-2 p-4">
+        <div className="font-medium">{action.label}</div>
+        <div className="text-xs text-muted-foreground">{action.description}</div>
+        {(action.fields || []).map((f) => (
+          <div key={f.name} className="space-y-1">
+            <label className="text-xs text-muted-foreground">{f.label || f.name}</label>
+            {f.type === "textarea" ? (
+              <Textarea
+                rows={f.rows || 3}
+                placeholder={f.placeholder || ""}
+                value={values[f.name]}
+                onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+                className="font-mono text-xs"
+              />
+            ) : (
+              <Input
+                placeholder={f.placeholder || ""}
+                value={values[f.name]}
+                onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+                className="font-mono text-xs"
+              />
+            )}
+          </div>
+        ))}
+        <Button variant="outline" className="mt-1 w-full border-pink-800/50 hover:border-pink-600" onClick={run} disabled={busy}>
+          <Play className="h-4 w-4" />
+          {action.label}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 
-/* ---------------- Trace ---------------- */
-const KIND_LABEL = {
-  trust: 'trust ⚠',
-  guardrail: 'guardrail',
-  solved: '✓ solved',
-  action: 'action',
-  reply: 'reply',
-};
+const KIND_LABEL = { trust: "trust ⚠", guardrail: "guardrail", solved: "✓ solved", action: "action", reply: "reply" };
 
 function TracePane({ trace }) {
   return (
-    <div className="pane">
-      <div className="section-title">Data-flow trace</div>
-      <div className="panel-hint">
-        Every hop between you, the model, and its tools. Pink = attacker-controlled text being read as
-        instructions.
+    <div className="space-y-2 pt-1">
+      <SectionTitle>Data-flow trace</SectionTitle>
+      <div className="text-xs text-muted-foreground">
+        Every hop between you, the model, and its tools. Pink = attacker-controlled text being read as instructions.
       </div>
       {!trace || trace.length === 0 ? (
-        <div className="trace-empty">No activity yet. Send a message.</div>
+        <div className="text-sm italic text-muted-foreground">No activity yet. Send a message.</div>
       ) : (
-        <div className="trace">
+        <div className="font-mono text-xs">
           {trace.map((t, i) => {
             const hop = t.from && t.to ? `${t.from} → ${t.to}` : t.actor ? `[${t.actor}]` : KIND_LABEL[t.kind] || t.kind;
+            const isTrust = t.kind === "trust" || t.kind === "actor";
+            const isSolved = t.kind === "solved";
             return (
-              <div className={'row t-' + t.kind + (t.status ? ' ' + t.status : '')} key={i}>
-                <div className="hop">{hop}</div>
-                <div className="body">
+              <div
+                key={i}
+                className={cn(
+                  "flex gap-2 border-b border-dashed border-border/60 py-1.5",
+                  isTrust && "border-l-2 border-l-pink-500 bg-pink-950/30 pl-2",
+                  isSolved && "border-l-2 border-l-emerald-500 bg-emerald-950/30 pl-2",
+                  t.status === "blocked" && "bg-rose-950/20",
+                )}
+              >
+                <div className="min-w-[92px] shrink-0 text-muted-foreground">{hop}</div>
+                <div
+                  className={cn(
+                    "flex-1 whitespace-pre-wrap break-words",
+                    t.kind === "user" && "text-sky-400",
+                    t.kind === "call" && "text-emerald-400",
+                    t.kind === "result" && "text-muted-foreground",
+                    isTrust && "text-pink-400",
+                    isSolved && "text-emerald-400",
+                    t.status === "blocked" && "text-rose-400",
+                    t.status === "bypassed" && "text-amber-400",
+                  )}
+                >
                   {t.text}
-                  {t.injected && <span className="badge inj">injected</span>}
-                  {t.tainted && <span className="badge taint">tainted data</span>}
+                  {t.injected && <span className="ml-1.5 rounded bg-pink-900/60 px-1 text-[10px] text-pink-300">injected</span>}
+                  {t.tainted && <span className="ml-1.5 rounded bg-amber-900/50 px-1 text-[10px] text-amber-300">tainted data</span>}
                 </div>
               </div>
             );
@@ -234,48 +260,53 @@ function TracePane({ trace }) {
   );
 }
 
-/* ---------------- Hints + solution ---------------- */
 function HelpPane({ data }) {
   const [hints, setHints] = useState([]);
   const [exhausted, setExhausted] = useState(false);
   const [solution, setSolution] = useState(null);
+  const [showSolution, setShowSolution] = useState(false);
 
   async function reveal() {
-    const res = await api.post('/api/hint');
+    const res = await api.post("/api/hint");
     if (res.hint) setHints((h) => [...h, res.hint]);
     if (res.exhausted) setExhausted(true);
   }
 
-  async function onToggleSolution(e) {
-    if (e.target.open && solution === null) {
-      const r = await api.post('/api/solution');
+  async function toggleSolution() {
+    if (!showSolution && solution === null) {
+      const r = await api.post("/api/solution");
       setSolution(r.solution);
     }
+    setShowSolution((v) => !v);
   }
 
   return (
-    <div className="pane">
-      <div className="section-title">Hints ({data.hintCount} available)</div>
-      <div className="row-btns">
-        <button onClick={reveal} disabled={exhausted}>
-          💡 Reveal a hint
-        </button>
-      </div>
-      <div className="hint-out">
+    <div className="space-y-3 pt-1">
+      <SectionTitle>Hints ({data.hintCount} available)</SectionTitle>
+      <Button variant="outline" size="sm" onClick={reveal} disabled={exhausted}>
+        <Lightbulb className="h-4 w-4" />
+        Reveal a hint
+      </Button>
+      <div className="space-y-2">
         {hints.map((h, i) => (
-          <div className="hint-item" key={i}>
+          <div key={i} className="rounded-r-md border-l-2 border-amber-500 bg-amber-950/20 px-3 py-2 text-sm">
             {h}
           </div>
         ))}
       </div>
 
-      <div className="section-title" style={{ marginTop: 16 }}>
-        Walkthrough
-      </div>
-      <details className="sol" onToggle={onToggleSolution}>
-        <summary>Show the full solution (spoiler)</summary>
-        <pre>{solution === null ? 'Loading…' : solution}</pre>
-      </details>
+      <SectionTitle>Walkthrough</SectionTitle>
+      <Button variant="ghost" size="sm" onClick={toggleSolution} className="text-muted-foreground">
+        <AlertTriangle className="h-4 w-4" />
+        {showSolution ? "Hide" : "Show"} the full solution (spoiler)
+      </Button>
+      {showSolution && solution && (
+        <Card>
+          <CardContent className="p-3">
+            <pre className="whitespace-pre-wrap font-mono text-xs text-muted-foreground">{solution}</pre>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
