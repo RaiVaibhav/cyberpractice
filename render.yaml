@@ -1,0 +1,18 @@
+# Render Blueprint. In the Render dashboard: New → Blueprint → point at this repo.
+# Render injects $PORT and expects the app to bind it (the Dockerfile CMD does).
+services:
+  - type: web
+    name: cyberpractice
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    # To run a REAL model instead of the offline simulator, uncomment and set
+    # GROQ_API_KEY as a *secret* in the dashboard (never commit it):
+    # envVars:
+    #   - key: CYBERPRACTICE_PROVIDER
+    #     value: free
+    #   - key: CYBERPRACTICE_FREE
+    #     value: groq
+    #   - key: GROQ_API_KEY
+    #     sync: false

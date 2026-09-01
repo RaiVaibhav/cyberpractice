@@ -50,7 +50,13 @@ def main():
     positional = [a for a in argv if not a.startswith("-")]
     target = positional[0] if positional else None
 
-    opts = {"real": "--real" in flags, "free": "--free" in flags}
+    # Provider comes from flags, or CYBERPRACTICE_PROVIDER env (handy for deploys:
+    # set it in the dashboard instead of editing the start command).
+    env_provider = os.environ.get("CYBERPRACTICE_PROVIDER", "").lower()
+    opts = {
+        "real": "--real" in flags or env_provider == "real",
+        "free": "--free" in flags or env_provider == "free",
+    }
     if opts["real"] and opts["free"]:
         sys.exit(_c(31, "  ✗ ") + "Pick one of --real or --free, not both.")
 
