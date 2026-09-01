@@ -13,7 +13,10 @@
     "list": "node platform/cli.js --list",
     "new": "node platform/new-scenario.js",
     "build:ui": "vite build",
-    "dev:ui": "vite"
+    "dev:ui": "vite",
+    "py:setup": "python3 -m venv .venv && .venv/bin/pip install -r backend/requirements.txt",
+    "py": ".venv/bin/python -m backend.run",
+    "py:free": ".venv/bin/python -m backend.run --free"
   },
   "engines": {
     "node": ">=20"

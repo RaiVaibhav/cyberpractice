@@ -21,6 +21,34 @@ npm run scenario -- prompt-injection-llm/indirect
 That starts a local server, prints the URL, and opens it. `Ctrl+C` to stop.
 The **first** run builds the React UI into `platform/web-dist` (cached after that).
 
+## Two backends, one UI
+
+The same React UI runs against either backend — identical REST contract, same
+scenarios, same behaviour. Pick whichever ecosystem you prefer:
+
+**Node** (default, above) — `platform/`.
+
+**Python / FastAPI** — `backend/`. Nicer if you want to reach for the Python AI
+ecosystem.
+
+```bash
+npm install && npm run build:ui       # build the UI once (needs Node)
+npm run py:setup                       # create .venv + install FastAPI deps
+npm run py -- prompt-injection-llm/direct        # offline simulator
+npm run py:free -- prompt-injection-llm/direct   # real model (reads .env)
+```
+
+Or drive it directly without npm:
+
+```bash
+python -m backend.run prompt-injection-llm/direct      # or no id → random
+HOST=0.0.0.0 PORT=8000 python -m backend.run --no-open  # deploy-style
+```
+
+Both backends discover scenarios the same way, expose `/api/*` identically, and
+serve the built UI from `platform/web-dist`. The FastAPI one honours `HOST`/`PORT`
+env (set `HOST=0.0.0.0` to deploy on Render / Fly / Hugging Face Spaces).
+
 ## Commands
 
 | Command | What it does |
